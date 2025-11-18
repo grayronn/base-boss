@@ -91,7 +91,7 @@ const Auth = () => {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -105,11 +105,23 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
+      // Check user role and redirect accordingly
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .single();
+
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
-      navigate("/");
+      
+      if (roleData?.role === "coach") {
+        navigate("/coach");
+      } else {
+        navigate("/");
+      }
     }
   };
 

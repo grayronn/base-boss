@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      games: {
+        Row: {
+          assigned_umpire_id: string | null
+          coach_id: string
+          created_at: string
+          game_date: string
+          id: string
+          location: string
+          opponent: string
+          status: Database["public"]["Enums"]["game_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_umpire_id?: string | null
+          coach_id: string
+          created_at?: string
+          game_date: string
+          id?: string
+          location: string
+          opponent: string
+          status?: Database["public"]["Enums"]["game_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_umpire_id?: string | null
+          coach_id?: string
+          created_at?: string
+          game_date?: string
+          id?: string
+          location?: string
+          opponent?: string
+          status?: Database["public"]["Enums"]["game_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -37,6 +73,79 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ratings: {
+        Row: {
+          coach_id: string
+          comment: string | null
+          created_at: string
+          game_id: string
+          id: string
+          rating: number
+          umpire_id: string
+        }
+        Insert: {
+          coach_id: string
+          comment?: string | null
+          created_at?: string
+          game_id: string
+          id?: string
+          rating: number
+          umpire_id: string
+        }
+        Update: {
+          coach_id?: string
+          comment?: string | null
+          created_at?: string
+          game_id?: string
+          id?: string
+          rating?: number
+          umpire_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      umpire_requests: {
+        Row: {
+          coach_id: string
+          created_at: string
+          game_id: string
+          id: string
+          status: Database["public"]["Enums"]["request_status"]
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          game_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          game_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "umpire_requests_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -71,6 +180,8 @@ export type Database = {
     }
     Enums: {
       app_role: "coach" | "umpire" | "employee"
+      game_status: "pending" | "assigned" | "completed" | "cancelled"
+      request_status: "pending" | "accepted" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -199,6 +310,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["coach", "umpire", "employee"],
+      game_status: ["pending", "assigned", "completed", "cancelled"],
+      request_status: ["pending", "accepted", "rejected"],
     },
   },
 } as const
