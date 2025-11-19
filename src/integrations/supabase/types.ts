@@ -21,7 +21,9 @@ export type Database = {
           created_at: string
           game_date: string
           id: string
+          latitude: number | null
           location: string
+          longitude: number | null
           opponent: string
           status: Database["public"]["Enums"]["game_status"]
           updated_at: string
@@ -32,7 +34,9 @@ export type Database = {
           created_at?: string
           game_date: string
           id?: string
+          latitude?: number | null
           location: string
+          longitude?: number | null
           opponent: string
           status?: Database["public"]["Enums"]["game_status"]
           updated_at?: string
@@ -43,7 +47,9 @@ export type Database = {
           created_at?: string
           game_date?: string
           id?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           opponent?: string
           status?: Database["public"]["Enums"]["game_status"]
           updated_at?: string
@@ -55,6 +61,8 @@ export type Database = {
           created_at: string
           email: string
           full_name: string | null
+          home_latitude: number | null
+          home_longitude: number | null
           id: string
           updated_at: string
         }
@@ -62,6 +70,8 @@ export type Database = {
           created_at?: string
           email: string
           full_name?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
           id: string
           updated_at?: string
         }
@@ -69,6 +79,8 @@ export type Database = {
           created_at?: string
           email?: string
           full_name?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
           id?: string
           updated_at?: string
         }
