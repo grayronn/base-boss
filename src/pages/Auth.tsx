@@ -119,6 +119,8 @@ const Auth = () => {
       
       if (roleData?.role === "coach") {
         navigate("/coach");
+      } else if (roleData?.role === "umpire") {
+        navigate("/umpire");
       } else {
         navigate("/");
       }
