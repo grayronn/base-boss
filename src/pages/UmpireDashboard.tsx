@@ -83,10 +83,14 @@ const UmpireDashboard = () => {
         `)
         .is("assigned_umpire_id", null)
         .eq("status", "pending")
-        .gte("game_date", new Date().toISOString())
         .order("game_date", { ascending: true });
 
-      if (gamesError) throw gamesError;
+      if (gamesError) {
+        console.error("Error fetching available games:", gamesError);
+        throw gamesError;
+      }
+      
+      console.log("Available games fetched:", gamesData);
       setAvailableGames(gamesData || []);
 
       // Fetch umpire's assigned games
