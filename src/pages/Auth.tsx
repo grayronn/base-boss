@@ -121,6 +121,8 @@ const Auth = () => {
         navigate("/coach");
       } else if (roleData?.role === "umpire") {
         navigate("/umpire");
+      } else if (roleData?.role === "employee") {
+        navigate("/employee");
       } else {
         navigate("/");
       }
