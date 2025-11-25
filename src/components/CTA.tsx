@@ -20,10 +20,6 @@ const CTA = () => {
               Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 text-lg px-8 py-6">
-              Schedule a Demo
-              <Calendar className="ml-2 h-5 w-5" />
-            </Button>
           </div>
 
           <p className="text-white/70 mt-6 text-sm">
