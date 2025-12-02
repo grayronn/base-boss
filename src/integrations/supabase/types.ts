@@ -179,7 +179,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      umpire_public_profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
