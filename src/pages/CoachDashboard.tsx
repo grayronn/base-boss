@@ -66,17 +66,17 @@ const CoachDashboard = () => {
 
       if (error) throw error;
 
-      // Fetch umpire profiles separately for assigned games
+      // Fetch umpire names using secure function
       const gamesWithProfiles = await Promise.all(
         (gamesData || []).map(async (game) => {
           if (game.assigned_umpire_id) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name")
-              .eq("id", game.assigned_umpire_id)
-              .single();
+            const { data: umpireName } = await supabase
+              .rpc("get_assigned_umpire_name", { game_id_param: game.id });
             
-            return { ...game, umpire_profile: profile };
+            return { 
+              ...game, 
+              umpire_profile: umpireName ? { full_name: umpireName } : null 
+            };
           }
           return game;
         })
