@@ -199,6 +199,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_assigned_umpire_name: {
+        Args: { game_id_param: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
