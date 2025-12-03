@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Star } from "lucide-react";
 
@@ -35,6 +36,7 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [noShow, setNoShow] = useState(false);
 
   const isEditing = !!game.existing_rating;
 
@@ -43,6 +45,7 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
     if (open && game.existing_rating) {
       setRating(game.existing_rating.rating);
       setComment(game.existing_rating.comment || "");
+      setNoShow(game.existing_rating.rating === 0);
     } else if (open) {
       resetForm();
     }
@@ -50,8 +53,10 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !game.assigned_umpire_id || rating === 0) return;
+    if (!user || !game.assigned_umpire_id || (!noShow && rating === 0)) return;
 
+    const finalRating = noShow ? 0 : rating;
+    
     setLoading(true);
     try {
       if (isEditing && game.existing_rating) {
@@ -59,7 +64,7 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
         const { error } = await supabase
           .from("ratings")
           .update({
-            rating,
+            rating: finalRating,
             comment: comment || null,
           })
           .eq("id", game.existing_rating.id);
@@ -74,7 +79,7 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
             game_id: game.id,
             coach_id: user.id,
             umpire_id: game.assigned_umpire_id,
-            rating,
+            rating: finalRating,
             comment: comment || null,
           });
 
@@ -101,6 +106,7 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
     setRating(0);
     setHoveredRating(0);
     setComment("");
+    setNoShow(false);
   };
 
   return (
@@ -115,36 +121,51 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-6 py-4">
-            <div className="grid gap-3">
-              <Label>Rating</Label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setRating(value)}
-                    onMouseEnter={() => setHoveredRating(value)}
-                    onMouseLeave={() => setHoveredRating(0)}
-                    className="transition-transform hover:scale-110"
-                  >
-                    <Star
-                      className={`h-8 w-8 ${
-                        value <= (hoveredRating || rating)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="noShow"
+                checked={noShow}
+                onCheckedChange={(checked) => {
+                  setNoShow(checked === true);
+                  if (checked) setRating(0);
+                }}
+              />
+              <Label htmlFor="noShow" className="text-destructive font-medium cursor-pointer">
+                Umpire did not show up
+              </Label>
             </div>
+            {!noShow && (
+              <div className="grid gap-3">
+                <Label>Rating</Label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setRating(value)}
+                      onMouseEnter={() => setHoveredRating(value)}
+                      onMouseLeave={() => setHoveredRating(0)}
+                      className="transition-transform hover:scale-110"
+                    >
+                      <Star
+                        className={`h-8 w-8 ${
+                          value <= (hoveredRating || rating)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="grid gap-3">
-              <Label htmlFor="comment">Comment (Optional)</Label>
+              <Label htmlFor="comment">{noShow ? "Details (Optional)" : "Comment (Optional)"}</Label>
               <Textarea
                 id="comment"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Share your feedback about the umpire's performance..."
+                placeholder={noShow ? "Provide any additional details about the no-show..." : "Share your feedback about the umpire's performance..."}
                 rows={4}
               />
             </div>
@@ -153,7 +174,7 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || rating === 0}>
+            <Button type="submit" disabled={loading || (!noShow && rating === 0)}>
               {loading ? "Saving..." : isEditing ? "Update Rating" : "Submit Rating"}
             </Button>
           </DialogFooter>
