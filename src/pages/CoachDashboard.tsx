@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Star, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isPast } from "date-fns";
 import RequestUmpireDialog from "@/components/coach/RequestUmpireDialog";
 import RateUmpireDialog from "@/components/coach/RateUmpireDialog";
+import PastGamesNotificationDialog from "@/components/coach/PastGamesNotificationDialog";
 import Navigation from "@/components/Navigation";
 
 interface Game {
@@ -24,6 +25,17 @@ interface Game {
   };
 }
 
+interface PastGame {
+  id: string;
+  game_date: string;
+  location: string;
+  opponent: string;
+  assigned_umpire_id: string;
+  umpire_profile?: {
+    full_name: string;
+  };
+}
+
 const CoachDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -32,6 +44,8 @@ const CoachDashboard = () => {
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [pastGamesDialogOpen, setPastGamesDialogOpen] = useState(false);
+  const [pastGamesNeedingConfirmation, setPastGamesNeedingConfirmation] = useState<PastGame[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -40,6 +54,7 @@ const CoachDashboard = () => {
     }
     checkCoachRole();
     fetchGames();
+    checkPastGames();
   }, [user, navigate]);
 
   const checkCoachRole = async () => {
@@ -53,6 +68,45 @@ const CoachDashboard = () => {
     if (error || !data) {
       toast.error("Access denied. Coach role required.");
       navigate("/");
+    }
+  };
+
+  const checkPastGames = async () => {
+    if (!user) return;
+
+    try {
+      // Fetch assigned games that are in the past and not completed
+      const { data: pastGames, error } = await supabase
+        .from("games")
+        .select("*")
+        .eq("coach_id", user.id)
+        .eq("status", "assigned")
+        .not("assigned_umpire_id", "is", null)
+        .lt("game_date", new Date().toISOString())
+        .order("game_date", { ascending: true });
+
+      if (error) throw error;
+
+      if (pastGames && pastGames.length > 0) {
+        // Fetch umpire names for these games
+        const gamesWithUmpires = await Promise.all(
+          pastGames.map(async (game) => {
+            const { data: umpireName } = await supabase.rpc(
+              "get_assigned_umpire_name",
+              { game_id_param: game.id }
+            );
+            return {
+              ...game,
+              umpire_profile: umpireName ? { full_name: umpireName } : undefined,
+            } as PastGame;
+          })
+        );
+
+        setPastGamesNeedingConfirmation(gamesWithUmpires);
+        setPastGamesDialogOpen(true);
+      }
+    } catch (error) {
+      console.error("Error checking past games:", error);
     }
   };
 
@@ -216,6 +270,16 @@ const CoachDashboard = () => {
           }}
         />
       )}
+
+      <PastGamesNotificationDialog
+        open={pastGamesDialogOpen}
+        onOpenChange={setPastGamesDialogOpen}
+        games={pastGamesNeedingConfirmation}
+        onComplete={() => {
+          fetchGames();
+          setPastGamesNeedingConfirmation([]);
+        }}
+      />
     </div>
   );
 };
