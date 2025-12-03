@@ -208,20 +208,26 @@ const CoachDashboard = () => {
   }) => {
     if (game.existing_rating) {
       const editable = canEditRating(game.existing_rating);
+      const isNoShow = game.existing_rating.rating === 0;
+      
       return (
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((value) => (
-              <Star
-                key={value}
-                className={`h-4 w-4 ${
-                  value <= game.existing_rating!.rating
-                    ? "fill-yellow-400 text-yellow-400"
-                    : "text-muted-foreground/30"
-                }`}
-              />
-            ))}
-          </div>
+          {isNoShow ? (
+            <span className="text-sm font-medium text-destructive">Umpire did not show up</span>
+          ) : (
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <Star
+                  key={value}
+                  className={`h-4 w-4 ${
+                    value <= game.existing_rating!.rating
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-muted-foreground/30"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
           {editable ? (
             <Tooltip>
               <TooltipTrigger asChild>

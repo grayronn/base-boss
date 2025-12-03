@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Star, Calendar, MapPin, ChevronRight, ChevronLeft, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
@@ -46,6 +47,7 @@ const PastGamesNotificationDialog = ({
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [noShow, setNoShow] = useState(false);
 
   const currentGame = games[currentIndex];
   const isLastGame = currentIndex === games.length - 1;
@@ -55,13 +57,16 @@ const PastGamesNotificationDialog = ({
     setRating(0);
     setHoveredRating(0);
     setComment("");
+    setNoShow(false);
   };
 
   const handleConfirmAndRate = async () => {
-    if (!user || !currentGame || rating === 0) {
-      toast.error("Please provide a rating before confirming");
+    if (!user || !currentGame || (!noShow && rating === 0)) {
+      toast.error("Please provide a rating or mark as no-show before confirming");
       return;
     }
+
+    const finalRating = noShow ? 0 : rating;
 
     setLoading(true);
     try {
@@ -78,7 +83,7 @@ const PastGamesNotificationDialog = ({
         game_id: currentGame.id,
         coach_id: user.id,
         umpire_id: currentGame.assigned_umpire_id,
-        rating,
+        rating: finalRating,
         comment: comment || null,
       });
 
@@ -176,36 +181,51 @@ const PastGamesNotificationDialog = ({
 
         {/* Rating section */}
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Rate the Umpire's Performance</Label>
-            <div className="flex gap-2 justify-center py-2">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setRating(value)}
-                  onMouseEnter={() => setHoveredRating(value)}
-                  onMouseLeave={() => setHoveredRating(0)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={`h-10 w-10 ${
-                      value <= (hoveredRating || rating)
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-muted-foreground/30"
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="noShowPast"
+              checked={noShow}
+              onCheckedChange={(checked) => {
+                setNoShow(checked === true);
+                if (checked) setRating(0);
+              }}
+            />
+            <Label htmlFor="noShowPast" className="text-destructive font-medium cursor-pointer">
+              Umpire did not show up
+            </Label>
           </div>
+          {!noShow && (
+            <div className="space-y-2">
+              <Label>Rate the Umpire's Performance</Label>
+              <div className="flex gap-2 justify-center py-2">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRating(value)}
+                    onMouseEnter={() => setHoveredRating(value)}
+                    onMouseLeave={() => setHoveredRating(0)}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={`h-10 w-10 ${
+                        value <= (hoveredRating || rating)
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-muted-foreground/30"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
-            <Label htmlFor="comment">Comment (Optional)</Label>
+            <Label htmlFor="comment">{noShow ? "Details (Optional)" : "Comment (Optional)"}</Label>
             <Textarea
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your feedback about the umpire's performance..."
+              placeholder={noShow ? "Provide any additional details about the no-show..." : "Share your feedback about the umpire's performance..."}
               rows={3}
             />
           </div>
@@ -237,7 +257,7 @@ const PastGamesNotificationDialog = ({
           </div>
           <Button
             onClick={handleConfirmAndRate}
-            disabled={loading || rating === 0}
+            disabled={loading || (!noShow && rating === 0)}
             className="w-full sm:w-auto"
           >
             {loading
