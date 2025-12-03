@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type UserRole = "coach" | "umpire" | "employee";
+type UserRole = "coach" | "umpire";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -257,12 +257,6 @@ const Auth = () => {
                       <RadioGroupItem value="umpire" id="umpire" />
                       <Label htmlFor="umpire" className="font-normal cursor-pointer">
                         Umpire - Accept game assignments
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="employee" id="employee" />
-                      <Label htmlFor="employee" className="font-normal cursor-pointer">
-                        Employee - Manage scheduling
                       </Label>
                     </div>
                   </RadioGroup>
