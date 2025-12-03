@@ -5,13 +5,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Star, Plus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Calendar, MapPin, Star, Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { format, isPast } from "date-fns";
+import { format, isPast, differenceInHours } from "date-fns";
 import RequestUmpireDialog from "@/components/coach/RequestUmpireDialog";
 import RateUmpireDialog from "@/components/coach/RateUmpireDialog";
 import PastGamesNotificationDialog from "@/components/coach/PastGamesNotificationDialog";
 import Navigation from "@/components/Navigation";
+
+interface GameRating {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
 
 interface Game {
   id: string;
@@ -23,6 +31,7 @@ interface Game {
   umpire_profile?: {
     full_name: string;
   };
+  existing_rating?: GameRating | null;
 }
 
 interface PastGame {
@@ -120,19 +129,35 @@ const CoachDashboard = () => {
 
       if (error) throw error;
 
+      // Fetch ratings for completed games
+      const { data: ratingsData } = await supabase
+        .from("ratings")
+        .select("id, game_id, rating, comment, created_at")
+        .eq("coach_id", user?.id);
+
+      const ratingsMap = new Map(
+        (ratingsData || []).map((r) => [r.game_id, r])
+      );
+
       // Fetch umpire names using secure function
       const gamesWithProfiles = await Promise.all(
         (gamesData || []).map(async (game) => {
+          let umpireProfile = null;
           if (game.assigned_umpire_id) {
-            const { data: umpireName } = await supabase
-              .rpc("get_assigned_umpire_name", { game_id_param: game.id });
-            
-            return { 
-              ...game, 
-              umpire_profile: umpireName ? { full_name: umpireName } : null 
-            };
+            const { data: umpireName } = await supabase.rpc(
+              "get_assigned_umpire_name",
+              { game_id_param: game.id }
+            );
+            umpireProfile = umpireName ? { full_name: umpireName } : null;
           }
-          return game;
+
+          const existingRating = ratingsMap.get(game.id);
+
+          return {
+            ...game,
+            umpire_profile: umpireProfile,
+            existing_rating: existingRating || null,
+          };
         })
       );
 
@@ -163,6 +188,62 @@ const CoachDashboard = () => {
   const handleRateUmpire = (game: Game) => {
     setSelectedGame(game);
     setRateDialogOpen(true);
+  };
+
+  const canEditRating = (rating: GameRating) => {
+    const hoursSinceCreation = differenceInHours(
+      new Date(),
+      new Date(rating.created_at)
+    );
+    return hoursSinceCreation < 24;
+  };
+
+  // Inline component to display rating or rate button
+  const GameRatingDisplay = ({
+    game,
+    onRate,
+  }: {
+    game: Game;
+    onRate: () => void;
+  }) => {
+    if (game.existing_rating) {
+      const editable = canEditRating(game.existing_rating);
+      return (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((value) => (
+              <Star
+                key={value}
+                className={`h-4 w-4 ${
+                  value <= game.existing_rating!.rating
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-muted-foreground/30"
+                }`}
+              />
+            ))}
+          </div>
+          {editable ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" onClick={onRate}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Edit rating (available for 24 hours)</TooltipContent>
+            </Tooltip>
+          ) : (
+            <span className="text-xs text-muted-foreground ml-1">Rated</span>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Button variant="outline" size="sm" onClick={onRate}>
+        <Star className="mr-2 h-4 w-4" />
+        Rate Umpire
+      </Button>
+    );
   };
 
   if (loading) {
@@ -236,14 +317,10 @@ const CoachDashboard = () => {
                       )}
                     </div>
                     {game.status === "completed" && game.assigned_umpire_id && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRateUmpire(game)}
-                      >
-                        <Star className="mr-2 h-4 w-4" />
-                        Rate Umpire
-                      </Button>
+                      <GameRatingDisplay
+                        game={game}
+                        onRate={() => handleRateUmpire(game)}
+                      />
                     )}
                   </div>
                 </CardContent>

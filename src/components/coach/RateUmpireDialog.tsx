@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Star } from "lucide-react";
+
+interface ExistingRating {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
 
 interface RateUmpireDialogProps {
   open: boolean;
@@ -17,6 +24,7 @@ interface RateUmpireDialogProps {
     umpire_profile?: {
       full_name: string;
     };
+    existing_rating?: ExistingRating | null;
   };
   onSuccess: () => void;
 }
@@ -28,25 +36,52 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
 
+  const isEditing = !!game.existing_rating;
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (open && game.existing_rating) {
+      setRating(game.existing_rating.rating);
+      setComment(game.existing_rating.comment || "");
+    } else if (open) {
+      resetForm();
+    }
+  }, [open, game.existing_rating]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !game.assigned_umpire_id || rating === 0) return;
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("ratings")
-        .insert({
-          game_id: game.id,
-          coach_id: user.id,
-          umpire_id: game.assigned_umpire_id,
-          rating,
-          comment: comment || null,
-        });
+      if (isEditing && game.existing_rating) {
+        // Update existing rating
+        const { error } = await supabase
+          .from("ratings")
+          .update({
+            rating,
+            comment: comment || null,
+          })
+          .eq("id", game.existing_rating.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Rating updated successfully!");
+      } else {
+        // Insert new rating
+        const { error } = await supabase
+          .from("ratings")
+          .insert({
+            game_id: game.id,
+            coach_id: user.id,
+            umpire_id: game.assigned_umpire_id,
+            rating,
+            comment: comment || null,
+          });
 
-      toast.success("Rating submitted successfully!");
+        if (error) throw error;
+        toast.success("Rating submitted successfully!");
+      }
+
       onSuccess();
       onOpenChange(false);
       resetForm();
@@ -72,9 +107,10 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Rate Umpire</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Rating" : "Rate Umpire"}</DialogTitle>
           <DialogDescription>
-            Rate the performance of {game.umpire_profile?.full_name || "the umpire"} for this game.
+            {isEditing ? "Update your rating for" : "Rate the performance of"}{" "}
+            {game.umpire_profile?.full_name || "the umpire"} for this game.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -118,7 +154,7 @@ const RateUmpireDialog = ({ open, onOpenChange, game, onSuccess }: RateUmpireDia
               Cancel
             </Button>
             <Button type="submit" disabled={loading || rating === 0}>
-              {loading ? "Submitting..." : "Submit Rating"}
+              {loading ? "Saving..." : isEditing ? "Update Rating" : "Submit Rating"}
             </Button>
           </DialogFooter>
         </form>
