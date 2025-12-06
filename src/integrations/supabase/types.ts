@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      external_umpire_leads: {
+        Row: {
+          coach_id: string
+          created_at: string
+          game_id: string
+          how_found: string
+          id: string
+          notes: string | null
+          umpire_contact: string | null
+          umpire_name: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          game_id: string
+          how_found: string
+          id?: string
+          notes?: string | null
+          umpire_contact?: string | null
+          umpire_name: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          game_id?: string
+          how_found?: string
+          id?: string
+          notes?: string | null
+          umpire_contact?: string | null
+          umpire_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_umpire_leads_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           assigned_umpire_id: string | null

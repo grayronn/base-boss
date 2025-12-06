@@ -12,6 +12,7 @@ import { format, isPast, differenceInHours } from "date-fns";
 import RequestUmpireDialog from "@/components/coach/RequestUmpireDialog";
 import RateUmpireDialog from "@/components/coach/RateUmpireDialog";
 import PastGamesNotificationDialog from "@/components/coach/PastGamesNotificationDialog";
+import PastPendingGamesDialog from "@/components/coach/PastPendingGamesDialog";
 import Navigation from "@/components/Navigation";
 
 interface GameRating {
@@ -45,6 +46,13 @@ interface PastGame {
   };
 }
 
+interface PastPendingGame {
+  id: string;
+  game_date: string;
+  location: string;
+  opponent: string;
+}
+
 const CoachDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -55,6 +63,8 @@ const CoachDashboard = () => {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [pastGamesDialogOpen, setPastGamesDialogOpen] = useState(false);
   const [pastGamesNeedingConfirmation, setPastGamesNeedingConfirmation] = useState<PastGame[]>([]);
+  const [pastPendingDialogOpen, setPastPendingDialogOpen] = useState(false);
+  const [pastPendingGames, setPastPendingGames] = useState<PastPendingGame[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -64,6 +74,7 @@ const CoachDashboard = () => {
     checkCoachRole();
     fetchGames();
     checkPastGames();
+    checkPastPendingGames();
   }, [user, navigate]);
 
   const checkCoachRole = async () => {
@@ -116,6 +127,31 @@ const CoachDashboard = () => {
       }
     } catch (error) {
       console.error("Error checking past games:", error);
+    }
+  };
+
+  const checkPastPendingGames = async () => {
+    if (!user) return;
+
+    try {
+      // Fetch pending games that are in the past and have no assigned umpire
+      const { data: pendingGames, error } = await supabase
+        .from("games")
+        .select("id, game_date, location, opponent")
+        .eq("coach_id", user.id)
+        .eq("status", "pending")
+        .is("assigned_umpire_id", null)
+        .lt("game_date", new Date().toISOString())
+        .order("game_date", { ascending: true });
+
+      if (error) throw error;
+
+      if (pendingGames && pendingGames.length > 0) {
+        setPastPendingGames(pendingGames);
+        setPastPendingDialogOpen(true);
+      }
+    } catch (error) {
+      console.error("Error checking past pending games:", error);
     }
   };
 
@@ -361,6 +397,16 @@ const CoachDashboard = () => {
         onComplete={() => {
           fetchGames();
           setPastGamesNeedingConfirmation([]);
+        }}
+      />
+
+      <PastPendingGamesDialog
+        open={pastPendingDialogOpen}
+        onOpenChange={setPastPendingDialogOpen}
+        games={pastPendingGames}
+        onComplete={() => {
+          fetchGames();
+          setPastPendingGames([]);
         }}
       />
     </div>
