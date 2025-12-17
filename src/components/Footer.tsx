@@ -11,7 +11,7 @@ const Footer = () => {
               <span className="font-bold text-foreground">UmpireScheduler</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Professional umpire scheduling made simple.
+              Qualified umpire scheduling made simple.
             </p>
           </div>
 

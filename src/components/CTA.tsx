@@ -12,7 +12,7 @@ const CTA = () => {
             Ready to Simplify Your Scheduling?
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join hundreds of teams already using UmpireScheduler to manage their games professionally and efficiently.
+            Join hundreds of teams already using UmpireScheduler to manage their games efficiently.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

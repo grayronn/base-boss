@@ -20,7 +20,7 @@ const Hero = () => {
             Streamline Your Baseball Umpire Scheduling
           </h1>
           <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed">
-            Connect teams with professional umpires effortlessly. Manage requests, scheduling, and assignments all in one powerful platform.
+            Connect teams with qualified umpires effortlessly. Manage requests, scheduling, and assignments all in one powerful platform.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">

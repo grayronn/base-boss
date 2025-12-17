@@ -9,7 +9,7 @@ const features = [
   },
   {
     icon: Users,
-    title: "Qualified Professionals",
+    title: "Qualified Umpires",
     description: "Access a network of certified, experienced umpires ready to officiate your games.",
   },
   {

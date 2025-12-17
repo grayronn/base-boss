@@ -19,7 +19,7 @@ const steps = [
   {
     number: "04",
     title: "Game Day Ready",
-    description: "Professional umpires arrive prepared, ensuring your game runs smoothly.",
+    description: "Qualified umpires arrive prepared, ensuring your game runs smoothly.",
   },
 ];
 
