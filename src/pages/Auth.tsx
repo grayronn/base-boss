@@ -16,11 +16,30 @@ const Auth = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
+  // Helper function to redirect based on role
+  const redirectBasedOnRole = async (userId: string) => {
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+
+    if (roleData?.role === "coach") {
+      navigate("/coach");
+    } else if (roleData?.role === "umpire") {
+      navigate("/umpire");
+    } else if (roleData?.role === "employee") {
+      navigate("/employee");
+    } else {
+      navigate("/");
+    }
+  };
+
   // Check if user is already logged in
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        redirectBasedOnRole(session.user.id);
       }
     });
   }, [navigate]);
@@ -105,27 +124,12 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
-      // Check user role and redirect accordingly
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", data.user.id)
-        .single();
-
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
       
-      if (roleData?.role === "coach") {
-        navigate("/coach");
-      } else if (roleData?.role === "umpire") {
-        navigate("/umpire");
-      } else if (roleData?.role === "employee") {
-        navigate("/employee");
-      } else {
-        navigate("/");
-      }
+      await redirectBasedOnRole(data.user.id);
     }
   };
 
