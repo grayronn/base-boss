@@ -17,12 +17,14 @@ import {
   Users, 
   LogOut,
   MessageSquare,
-  Filter
+  Filter,
+  UserPlus
 } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import ManageEmployeesDialog from "@/components/employee/ManageEmployeesDialog";
 
 interface Game {
   id: string;
@@ -59,6 +61,8 @@ const EmployeeDashboard = () => {
   const [selectedRating, setSelectedRating] = useState<Rating | null>(null);
   const [message, setMessage] = useState("");
   const [ratingFilter, setRatingFilter] = useState<"all" | "low">("all");
+  const [manageEmployeesOpen, setManageEmployeesOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -83,6 +87,16 @@ const EmployeeDashboard = () => {
       toast.error("Access denied. Employee role required.");
       navigate("/");
     }
+
+    // Check if user is admin
+    const { data: adminData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    setIsAdmin(!!adminData);
   };
 
   const fetchData = async () => {
@@ -222,10 +236,18 @@ const EmployeeDashboard = () => {
             <h1 className="text-2xl font-bold text-foreground">Employee Dashboard</h1>
             <p className="text-sm text-muted-foreground">System Management Portal</p>
           </div>
-          <Button variant="outline" onClick={() => signOut()}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button variant="outline" onClick={() => setManageEmployeesOpen(true)}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Manage Employees
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => signOut()}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -511,6 +533,11 @@ const EmployeeDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ManageEmployeesDialog 
+        open={manageEmployeesOpen} 
+        onOpenChange={setManageEmployeesOpen} 
+      />
     </div>
   );
 };
