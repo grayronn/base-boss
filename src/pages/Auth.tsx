@@ -64,7 +64,7 @@ const Auth = () => {
       return;
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -84,11 +84,16 @@ const Auth = () => {
         description: error.message,
         variant: "destructive",
       });
-    } else {
+    } else if (data.user) {
       toast({
         title: "Success!",
-        description: "Your account has been created. You can now sign in.",
+        description: "Your account has been created. Redirecting...",
       });
+      
+      // Small delay to allow the trigger to create the user role
+      setTimeout(async () => {
+        await redirectBasedOnRole(data.user!.id);
+      }, 500);
     }
   };
 
