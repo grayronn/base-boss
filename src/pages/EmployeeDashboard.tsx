@@ -19,7 +19,8 @@ import {
   MessageSquare,
   Filter,
   UserPlus,
-  PlusCircle
+  PlusCircle,
+  FileSpreadsheet
 } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import ManageEmployeesDialog from "@/components/employee/ManageEmployeesDialog";
 import CreateGameRequestDialog from "@/components/employee/CreateGameRequestDialog";
+import BulkUploadGamesDialog from "@/components/employee/BulkUploadGamesDialog";
 
 interface Game {
   id: string;
@@ -65,6 +67,7 @@ const EmployeeDashboard = () => {
   const [ratingFilter, setRatingFilter] = useState<"all" | "low">("all");
   const [manageEmployeesOpen, setManageEmployeesOpen] = useState(false);
   const [createGameOpen, setCreateGameOpen] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -242,7 +245,11 @@ const EmployeeDashboard = () => {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setCreateGameOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Create Game Request
+              Create Game
+            </Button>
+            <Button variant="outline" onClick={() => setBulkUploadOpen(true)}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Bulk Upload
             </Button>
             {isAdmin && (
               <Button variant="outline" onClick={() => setManageEmployeesOpen(true)}>
@@ -549,6 +556,12 @@ const EmployeeDashboard = () => {
       <CreateGameRequestDialog
         open={createGameOpen}
         onOpenChange={setCreateGameOpen}
+        onSuccess={fetchData}
+      />
+
+      <BulkUploadGamesDialog
+        open={bulkUploadOpen}
+        onOpenChange={setBulkUploadOpen}
         onSuccess={fetchData}
       />
     </div>
