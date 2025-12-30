@@ -18,13 +18,15 @@ import {
   LogOut,
   MessageSquare,
   Filter,
-  UserPlus
+  UserPlus,
+  PlusCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import ManageEmployeesDialog from "@/components/employee/ManageEmployeesDialog";
+import CreateGameRequestDialog from "@/components/employee/CreateGameRequestDialog";
 
 interface Game {
   id: string;
@@ -62,6 +64,7 @@ const EmployeeDashboard = () => {
   const [message, setMessage] = useState("");
   const [ratingFilter, setRatingFilter] = useState<"all" | "low">("all");
   const [manageEmployeesOpen, setManageEmployeesOpen] = useState(false);
+  const [createGameOpen, setCreateGameOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -237,6 +240,10 @@ const EmployeeDashboard = () => {
             <p className="text-sm text-muted-foreground">System Management Portal</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setCreateGameOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Game Request
+            </Button>
             {isAdmin && (
               <Button variant="outline" onClick={() => setManageEmployeesOpen(true)}>
                 <UserPlus className="mr-2 h-4 w-4" />
@@ -537,6 +544,12 @@ const EmployeeDashboard = () => {
       <ManageEmployeesDialog 
         open={manageEmployeesOpen} 
         onOpenChange={setManageEmployeesOpen} 
+      />
+
+      <CreateGameRequestDialog
+        open={createGameOpen}
+        onOpenChange={setCreateGameOpen}
+        onSuccess={fetchData}
       />
     </div>
   );
