@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { UserPlus, UserCog, Loader2 } from "lucide-react";
+import { UserPlus, UserCog, UserMinus, Loader2 } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -35,7 +35,9 @@ interface ManageEmployeesDialogProps {
 
 const ManageEmployeesDialog = ({ open, onOpenChange }: ManageEmployeesDialogProps) => {
   const [users, setUsers] = useState<Profile[]>([]);
+  const [employees, setEmployees] = useState<Profile[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newFullName, setNewFullName] = useState("");
@@ -45,6 +47,7 @@ const ManageEmployeesDialog = ({ open, onOpenChange }: ManageEmployeesDialogProp
   useEffect(() => {
     if (open) {
       fetchNonEmployeeUsers();
+      fetchCurrentEmployees();
     }
   }, [open]);
 
@@ -78,6 +81,46 @@ const ManageEmployeesDialog = ({ open, onOpenChange }: ManageEmployeesDialogProp
     }
   };
 
+  const fetchCurrentEmployees = async () => {
+    try {
+      // Get all users who are employees (excluding admins to prevent revoking admin access)
+      const { data: employeeRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "employee");
+
+      if (rolesError) throw rolesError;
+
+      const employeeUserIds = employeeRoles?.map(r => r.user_id) || [];
+      
+      if (employeeUserIds.length === 0) {
+        setEmployees([]);
+        return;
+      }
+
+      // Get profiles for these employees
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", employeeUserIds);
+
+      if (profilesError) throw profilesError;
+
+      // Exclude admins from the revoke list
+      const { data: adminRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+
+      const adminUserIds = new Set(adminRoles?.map(r => r.user_id) || []);
+      const nonAdminEmployees = (profiles || []).filter(p => !adminUserIds.has(p.id));
+      
+      setEmployees(nonAdminEmployees);
+    } catch (error: any) {
+      toast.error("Error fetching employees: " + error.message);
+    }
+  };
+
   const handleConvertToEmployee = async () => {
     if (!selectedUserId) {
       toast.error("Please select a user");
@@ -98,6 +141,7 @@ const ManageEmployeesDialog = ({ open, onOpenChange }: ManageEmployeesDialogProp
       toast.success("User has been granted employee access");
       setSelectedUserId("");
       fetchNonEmployeeUsers();
+      fetchCurrentEmployees();
     } catch (error: any) {
       toast.error("Error converting user: " + error.message);
     } finally {
@@ -146,6 +190,33 @@ const ManageEmployeesDialog = ({ open, onOpenChange }: ManageEmployeesDialogProp
     }
   };
 
+  const handleRevokeAccess = async () => {
+    if (!selectedEmployeeId) {
+      toast.error("Please select an employee");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", selectedEmployeeId)
+        .eq("role", "employee");
+
+      if (error) throw error;
+
+      toast.success("Employee access has been revoked");
+      setSelectedEmployeeId("");
+      fetchNonEmployeeUsers();
+      fetchCurrentEmployees();
+    } catch (error: any) {
+      toast.error("Error revoking access: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -157,14 +228,18 @@ const ManageEmployeesDialog = ({ open, onOpenChange }: ManageEmployeesDialogProp
         </DialogHeader>
 
         <Tabs defaultValue="convert" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="convert" className="flex items-center gap-2">
               <UserCog className="h-4 w-4" />
-              Convert User
+              Convert
             </TabsTrigger>
             <TabsTrigger value="create" className="flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
-              Create New
+              Create
+            </TabsTrigger>
+            <TabsTrigger value="revoke" className="flex items-center gap-2">
+              <UserMinus className="h-4 w-4" />
+              Revoke
             </TabsTrigger>
           </TabsList>
 
@@ -242,6 +317,44 @@ const ManageEmployeesDialog = ({ open, onOpenChange }: ManageEmployeesDialogProp
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Employee
+              </Button>
+            </DialogFooter>
+          </TabsContent>
+
+          <TabsContent value="revoke" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label>Select Employee to Revoke Access</Label>
+              {fetchingUsers ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              ) : employees.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  No employees available to revoke (admins cannot be revoked)
+                </p>
+              ) : (
+                <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an employee..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.full_name || employee.email} ({employee.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="destructive"
+                onClick={handleRevokeAccess}
+                disabled={loading || !selectedEmployeeId}
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Revoke Employee Access
               </Button>
             </DialogFooter>
           </TabsContent>
