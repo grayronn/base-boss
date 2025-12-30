@@ -21,15 +21,17 @@ const Auth = () => {
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId)
-      .single();
+      .eq("user_id", userId);
 
-    if (roleData?.role === "coach") {
-      navigate("/coach");
-    } else if (roleData?.role === "umpire") {
-      navigate("/umpire");
-    } else if (roleData?.role === "employee") {
+    const roles = roleData?.map(r => r.role) || [];
+
+    // Priority: admin/employee > coach > umpire
+    if (roles.includes("admin") || roles.includes("employee")) {
       navigate("/employee");
+    } else if (roles.includes("coach")) {
+      navigate("/coach");
+    } else if (roles.includes("umpire")) {
+      navigate("/umpire");
     } else {
       navigate("/");
     }
